@@ -48,21 +48,24 @@ export default function Dashboard() {
                     .in('job_id', jobIds)
 
                 // Fetch user profiles
-                let userMap: Record<string, string> = {}
+                let userMap: Record<string, { name: string, contact: string | undefined }> = {}
                 if (assignments) {
                     const uids = [...new Set(assignments.map((a: any) => a.user_id))]
                     const { data: profiles } = await supabase
                         .from('profiles')
-                        .select('id, full_name')
+                        .select('id, full_name, contact_number')
                         .in('id', uids)
-                    profiles?.forEach((p: any) => { userMap[p.id] = p.full_name })
+                    profiles?.forEach((p: any) => {
+                        userMap[p.id] = { name: p.full_name, contact: p.contact_number }
+                    })
                 }
 
                 // Format jobs with assignments
                 const formatted = jobsData.map((job: any) => {
                     const jobAssignments = assignments?.filter((a: any) => a.job_id === job.id) || []
                     const assignedUsers = jobAssignments.map((ja: any) => ({
-                        full_name: userMap[ja.user_id] || 'Unknown',
+                        full_name: userMap[ja.user_id]?.name || 'Unknown',
+                        contact_number: userMap[ja.user_id]?.contact || undefined,
                         user_id: ja.user_id
                     }))
 

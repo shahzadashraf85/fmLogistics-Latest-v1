@@ -15,6 +15,7 @@ export interface Job {
 export interface EmployeeStats {
     user_id: string
     full_name: string
+    contact_number?: string
     total_jobs: number
     pending: number
     on_way: number

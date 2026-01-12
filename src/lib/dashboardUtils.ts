@@ -6,9 +6,11 @@ export const calculateEmployeeStats = (jobsList: Job[]): EmployeeStats[] => {
     jobsList.forEach(job => {
         job.assigned_users?.forEach(user => {
             if (!statsMap[user.user_id]) {
+                const initUser: any = user // Type assertion to bypass strict check for now
                 statsMap[user.user_id] = {
                     user_id: user.user_id,
                     full_name: user.full_name,
+                    contact_number: initUser.contact_number, // We will ensure this is passed in Dashboard.tsx
                     total_jobs: 0,
                     pending: 0,
                     on_way: 0,

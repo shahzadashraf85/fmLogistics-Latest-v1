@@ -165,14 +165,29 @@ function DashboardLayout() {
           if (payload.old && payload.new && payload.old.status !== payload.new.status) {
             const oldStatus = payload.old.status.replace('_', ' ').toUpperCase()
             const newStatus = payload.new.status.replace('_', ' ').toUpperCase()
+
+            // In-App Toast
             toast.info('Status Updated', {
               description: `${payload.new.company_name}: ${oldStatus} -> ${newStatus}`,
               duration: 5000,
             })
+
+            // System Notification (works if tab is backgrounded/minimized)
+            if (Notification.permission === 'granted') {
+              new Notification(`Job Update: ${payload.new.lot_number || 'Unknown Lot'}`, {
+                body: `${payload.new.company_name} is now ${newStatus}`,
+                icon: '/vite.svg'
+              })
+            }
           }
         }
       )
       .subscribe()
+
+    // Request permission on load
+    if (Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
 
     return () => { supabase.removeChannel(channel) }
   }, [])

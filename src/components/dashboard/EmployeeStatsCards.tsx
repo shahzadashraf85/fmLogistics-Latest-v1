@@ -31,7 +31,18 @@ export function EmployeeStatsCards({ stats }: EmployeeStatsCardsProps) {
                             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
                                 <User className="h-5 w-5 text-white" />
                             </div>
-                            <span className="font-bold">{employee.full_name}</span>
+                            <div className="flex flex-col">
+                                <span className="font-bold leading-none">{employee.full_name}</span>
+                                {employee.contact_number && (
+                                    <a
+                                        href={`tel:${employee.contact_number}`}
+                                        className="text-xs font-normal text-blue-600 hover:underline mt-1 flex items-center gap-1"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {employee.contact_number}
+                                    </a>
+                                )}
+                            </div>
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 p-3 pt-0">
