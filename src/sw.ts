@@ -8,8 +8,16 @@ import { clientsClaim } from 'workbox-core'
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
+// Force immediate activation
 self.skipWaiting()
 clientsClaim()
+
+// Listen for messages to skip waiting
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting()
+    }
+})
 
 self.addEventListener('push', (event) => {
     console.log('[Service Worker] Push received:', event)
