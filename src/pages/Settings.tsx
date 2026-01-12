@@ -165,6 +165,50 @@ export default function Settings() {
                     </form>
                 </CardContent>
             </Card>
-        </div>
+
+            <Card className="mt-6">
+                <CardHeader>
+                    <CardTitle>Notifications</CardTitle>
+                    <CardDescription>Test your device's push notification connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                            <div>
+                                <h4 className="font-medium text-gray-900">Push Notifications</h4>
+                                <p className="text-sm text-gray-500">Send a test alert to this device</p>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={async () => {
+                                    try {
+                                        const res = await fetch('/api/send-push', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                title: 'Test Notification',
+                                                body: 'This is a test message from FM Logistics',
+                                                url: '/settings'
+                                            })
+                                        })
+                                        if (res.ok) {
+                                            alert('Notification Sent! Check your status bar.')
+                                        } else {
+                                            const err = await res.json()
+                                            alert('Failed to send: ' + (err.error || 'Unknown error'))
+                                        }
+                                    } catch (e: any) {
+                                        alert('Error: ' + e.message)
+                                    }
+                                }}
+                            >
+                                Send Test
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div >
     )
 }
