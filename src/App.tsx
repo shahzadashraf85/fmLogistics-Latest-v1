@@ -162,8 +162,10 @@ function DashboardLayout() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'jobs' },
         (payload: any) => {
-          if (payload.old && payload.new && payload.old.status !== payload.new.status) {
-            const oldStatus = payload.old.status.replace('_', ' ').toUpperCase()
+          console.log("Realtime Payload:", payload) // Debugging
+          if ((payload.old && payload.new && payload.old.status !== payload.new.status) || (payload.eventType === 'UPDATE')) {
+            // Fallback: If old is missing (due to config), just assume it's an update we care about if status is present
+            const oldStatus = payload.old?.status ? payload.old.status.replace('_', ' ').toUpperCase() : 'PREVIOUS'
             const newStatus = payload.new.status.replace('_', ' ').toUpperCase()
 
             // In-App Toast
