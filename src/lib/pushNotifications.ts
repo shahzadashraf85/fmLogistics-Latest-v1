@@ -71,14 +71,25 @@ export async function registerPushNotifications(userId: string) {
         }
 
         // Save to Supabase
+        // First, delete any existing subscriptions for this user to avoid duplicates
+        const { error: deleteError } = await supabase
+            .from('push_subscriptions')
+            .delete()
+            .eq('user_id', userId)
+
+        if (deleteError) {
+            console.log('Note: Could not delete old subscriptions:', deleteError.message)
+        }
+
+        // Now insert the new subscription
         const { error } = await supabase
             .from('push_subscriptions')
-            .upsert({
+            .insert({
                 user_id: userId,
                 endpoint: subscription.endpoint,
                 keys: subscription.toJSON().keys,
                 user_agent: navigator.userAgent
-            }, { onConflict: 'endpoint' })
+            })
 
         if (error) {
             alert('Supabase DB Error: ' + error.message)
@@ -90,4 +101,3 @@ export async function registerPushNotifications(userId: string) {
         alert('Registration Error: ' + error.message)
     }
 }
-
