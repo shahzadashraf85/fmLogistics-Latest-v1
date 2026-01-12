@@ -66,6 +66,41 @@ export default function ActiveJobs() {
         }
     }, [dateFilter])
 
+    // Real-time updates for jobs
+    useEffect(() => {
+        const channel = supabase
+            .channel('active-jobs-updates')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'jobs' },
+                (payload) => {
+                    console.log('Job update received:', payload)
+
+                    if (payload.eventType === 'UPDATE') {
+                        // Update the job in the list
+                        setJobs(prevJobs =>
+                            prevJobs.map(job =>
+                                job.id === payload.new.id
+                                    ? { ...job, ...payload.new }
+                                    : job
+                            )
+                        )
+                    } else if (payload.eventType === 'INSERT') {
+                        // Refresh the entire list to check if this job should be shown
+                        fetchUserAndJobs()
+                    } else if (payload.eventType === 'DELETE') {
+                        // Remove the job from the list
+                        setJobs(prevJobs => prevJobs.filter(job => job.id !== payload.old.id))
+                    }
+                }
+            )
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [filterMode, dateFilter])
+
     useEffect(() => {
         // When location is obtained and jobs are loaded, calculate distances
         if (userLocation && jobs.length > 0 && !calculatingDistances && !distancesCalculated && !calculationInProgress.current) {

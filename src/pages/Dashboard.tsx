@@ -24,6 +24,28 @@ export default function Dashboard() {
         fetchTableData()
     }, [tableDateFilter])
 
+    // Real-time updates
+    useEffect(() => {
+        const channel = supabase
+            .channel('dashboard-updates')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'jobs' },
+                (payload) => {
+                    console.log('Dashboard job update:', payload)
+
+                    // Refresh both today's data and table data
+                    fetchTodayData()
+                    fetchTableData()
+                }
+            )
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [tableDateFilter])
+
     const fetchTodayData = async () => {
         setLoading(true)
         try {
