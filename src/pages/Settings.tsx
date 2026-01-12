@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button'
 import { Label } from '../components/ui/label'
 import { User, Lock, AlertCircle, CheckCircle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert'
+import { toast } from 'sonner'
 
 export default function Settings() {
     const { profile } = useAuth()
@@ -189,9 +190,17 @@ export default function Settings() {
                             type="button"
                             variant="outline"
                             onClick={async () => {
-                                const { registerPushNotifications } = await import('../lib/pushNotifications');
-                                if (profile?.id) {
-                                    await registerPushNotifications(profile.id);
+                                try {
+                                    toast.info('Enabling notifications...')
+                                    const { registerPushNotifications } = await import('../lib/pushNotifications');
+                                    if (profile?.id) {
+                                        await registerPushNotifications(profile.id);
+                                        toast.success('Notifications enabled! You will receive alerts when job status changes.')
+                                    } else {
+                                        toast.error('Error: Please log out and log back in.')
+                                    }
+                                } catch (error: any) {
+                                    toast.error('Failed to enable notifications: ' + error.message)
                                 }
                             }}
                         >
