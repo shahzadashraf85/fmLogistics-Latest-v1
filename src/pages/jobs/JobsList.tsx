@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { Job } from '../../types/job';
+import type { Job } from '../../types/job';
 import { Link } from 'react-router-dom';
 
 export default function JobsList() {

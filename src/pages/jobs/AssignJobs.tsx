@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { Job } from '../../types/job';
+import type { Job } from '../../types/job';
 
 interface Profile {
     id: string;
@@ -85,8 +85,8 @@ export default function AssignJobs() {
                                                     key={user.id}
                                                     onClick={() => toggleAssignment(job.id, user.id, !isAssigned)}
                                                     className={`px-3 py-1 rounded-full text-xs transition-colors duration-200 ${isAssigned
-                                                            ? 'bg-blue-600 text-white'
-                                                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
                                                         }`}
                                                 >
                                                     {user.full_name || user.email}

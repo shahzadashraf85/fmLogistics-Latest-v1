@@ -10,7 +10,7 @@ import { User, Mail, Calendar, Save, Lock, Eye, EyeOff } from 'lucide-react'
 export default function ProfilePage() {
     const { profile, refreshProfile } = useAuth()
     const [name, setName] = useState('')
-    const [currentPassword, setCurrentPassword] = useState('')
+
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
@@ -71,7 +71,7 @@ export default function ProfilePage() {
             if (error) throw error
 
             setPasswordMsg('Password updated successfully')
-            setCurrentPassword('')
+
             setNewPassword('')
             setConfirmPassword('')
             setTimeout(() => setPasswordMsg(''), 3000)
@@ -102,8 +102,8 @@ export default function ProfilePage() {
                 <CardContent className="space-y-6">
                     {msg && (
                         <div className={`p-3 rounded-md text-sm ${msg.includes('success')
-                                ? 'bg-green-50 text-green-800 border border-green-200'
-                                : 'bg-red-50 text-red-800 border border-red-200'
+                            ? 'bg-green-50 text-green-800 border border-green-200'
+                            : 'bg-red-50 text-red-800 border border-red-200'
                             }`}>
                             {msg}
                         </div>
@@ -202,8 +202,8 @@ export default function ProfilePage() {
                 <CardContent className="space-y-6">
                     {passwordMsg && (
                         <div className={`p-3 rounded-md text-sm ${passwordMsg.includes('success')
-                                ? 'bg-green-50 text-green-800 border border-green-200'
-                                : 'bg-red-50 text-red-800 border border-red-200'
+                            ? 'bg-green-50 text-green-800 border border-green-200'
+                            : 'bg-red-50 text-red-800 border border-red-200'
                             }`}>
                             {passwordMsg}
                         </div>

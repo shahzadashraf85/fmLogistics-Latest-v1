@@ -8,7 +8,7 @@ import ImportJobs from './pages/ImportJobs'
 import Dashboard from './pages/Dashboard'
 import { Button } from './components/ui/button'
 import { LogOut, User, Menu, X, Briefcase, Upload, Users as UsersIcon, Loader2, LayoutDashboard, Settings as SettingsIcon } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import Settings from './pages/Settings'
 import SharedDashboard from './pages/SharedDashboard'
 
@@ -125,7 +125,7 @@ function GlobalLoader() {
   )
 }
 
-function RequireAuth({ children }: { children: JSX.Element }) {
+function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
 
   if (loading) return <GlobalLoader />
@@ -134,7 +134,7 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   return children
 }
 
-function AdminRoute({ children }: { children: JSX.Element }) {
+function AdminRoute({ children }: { children: ReactNode }) {
   const { profile, loading } = useAuth()
 
   if (loading) return <GlobalLoader />

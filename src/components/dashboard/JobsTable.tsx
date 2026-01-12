@@ -23,9 +23,9 @@ interface JobsTableProps {
     isReadOnly?: boolean
 }
 
-export function JobsTable({ jobs, dateFilter, onDateChange, isReadOnly = false }: JobsTableProps) {
+export function JobsTable({ jobs, dateFilter, onDateChange, isReadOnly: _isReadOnly = false }: JobsTableProps) {
     // isReadOnly can be used to hide actions or sensitive data if needed in future
-    const _ignore = isReadOnly;
+
     const [selectedJob, setSelectedJob] = useState<Job | null>(null)
 
     const getStatusBadge = (status: string) => {

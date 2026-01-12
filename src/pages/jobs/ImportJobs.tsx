@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import * as XLSX from 'xlsx';
-import { JobImportRow } from '../../types/job';
+import type { JobImportRow } from '../../types/job';
 
 export default function ImportJobs() {
     const [text, setText] = useState('');
@@ -17,7 +17,7 @@ export default function ImportJobs() {
         const data = await file.arrayBuffer();
         const workbook = XLSX.read(data);
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
         // Convert to simple text representation for AI to parse logic or CSV
         const csv = XLSX.utils.sheet_to_csv(sheet);
         setText(csv);

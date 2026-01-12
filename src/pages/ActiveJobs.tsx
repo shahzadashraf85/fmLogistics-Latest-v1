@@ -44,14 +44,14 @@ export default function ActiveJobs() {
     const lastDateFilter = useRef(dateFilter)
 
     useEffect(() => {
-        fetchUserAndJobs(true) // Preserve distances when only filter mode changes
+        fetchUserAndJobs() // Preserve distances when only filter mode changes
     }, [filterMode])
 
     useEffect(() => {
         const dateChanged = lastDateFilter.current !== dateFilter
         lastDateFilter.current = dateFilter
 
-        fetchUserAndJobs(!dateChanged) // Don't preserve distances when date changes
+        fetchUserAndJobs() // Don't preserve distances when date changes
 
         // Always request location on mount or when date changes
         // checking !distancesCalculated helps to avoid loop but initially it is false
@@ -307,7 +307,7 @@ export default function ActiveJobs() {
         return updatedJobs
     }
 
-    const fetchUserAndJobs = async (preserveDistances: boolean = false) => {
+    const fetchUserAndJobs = async () => {
         setLoading(true)
         try {
             // 1. Get User & Role
