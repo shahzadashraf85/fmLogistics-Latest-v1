@@ -180,12 +180,17 @@ function DashboardLayout() {
 
             // Trigger Web Push (Backend)
             // This ensures notification is sent even if app is backgrounded/closed on mobile
+            const statusFormatted = newStatus.toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())
+
+            // Extract short address (first part before comma)
+            const shortAddress = payload.new.address ? payload.new.address.split(',')[0] : 'Unknown Address'
+
             fetch('/api/send-push', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                title: `Job Update: ${payload.new.lot_number || 'Unknown Lot'}`,
-                body: `${payload.new.company_name} is now ${newStatus}`,
+                title: `Lot #${payload.new.lot_number || 'Unknown'}`,
+                body: `${payload.new.company_name}, ${shortAddress} is ${statusFormatted}`,
                 url: '/dashboard'
               })
             }).catch(err => console.error("Failed to trigger push:", err));
