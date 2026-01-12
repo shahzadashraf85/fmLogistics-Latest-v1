@@ -166,104 +166,42 @@ export default function Settings() {
                 </CardContent>
             </Card>
 
+
             <Card className="mt-6">
                 <CardHeader>
-                    <CardTitle>Notifications</CardTitle>
-                    <CardDescription>Manage your device's push connection</CardDescription>
+                    <CardTitle>Push Notifications</CardTitle>
+                    <CardDescription>Receive real-time updates when job status changes</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col gap-4">
-                        <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100">
-                            <div>
-                                <h4 className="font-medium text-blue-900">Connection Status</h4>
-                                <p className="text-sm text-blue-700">Tap if notifications aren't working</p>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
                             </div>
-                            <Button
-                                type="button"
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                                onClick={async () => {
-                                    alert('Starting manual registration...');
-                                    const { registerPushNotifications } = await import('../lib/pushNotifications');
-                                    // @ts-ignore
-                                    if (profile?.id) {
-                                        await registerPushNotifications(profile.id);
-                                        alert('Registration attempt finished. Check logs/popups.');
-                                    } else {
-                                        alert('Error: User ID missing. Please relogin.');
-                                    }
-                                }}
-                            >
-                                Reset & Enable
-                            </Button>
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
                             <div>
-                                <h4 className="font-medium text-gray-900">Push Notifications</h4>
-                                <p className="text-sm text-gray-500">Send a test alert to this device</p>
+                                <h4 className="font-medium text-gray-900">Mobile Notifications</h4>
+                                <p className="text-sm text-gray-500">Get notified on this device</p>
                             </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={async () => {
-                                    try {
-                                        const res = await fetch('/api/send-push', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({
-                                                title: 'Test Notification',
-                                                body: 'This is a test message from FM Logistics',
-                                                url: '/settings'
-                                            })
-                                        })
-                                        if (res.ok) {
-                                            const data = await res.json()
-                                            alert(`Notification Result:\nTotal Targets: ${data.total}\nSuccessfully Sent: ${data.sent}\nFailures: ${data.failures.length}\n${data.failures.join('\n')}`)
-                                        } else {
-                                            const err = await res.json()
-                                            alert('Failed to send: ' + (err.error || 'Unknown error'))
-                                        }
-                                    } catch (e: any) {
-                                        alert('Error: ' + e.message)
-                                    }
-                                }}
-                            >
-                                Send Test
-                            </Button>
                         </div>
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
-                            <div>
-                                <h4 className="font-medium text-gray-900">Push Notifications</h4>
-                                <p className="text-sm text-gray-500">Send a test alert to this device</p>
-                            </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={async () => {
-                                    alert('Lock your screen NOW! sending in 5 seconds...');
-                                    setTimeout(async () => {
-                                        try {
-                                            await fetch('/api/send-push', {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({
-                                                    title: 'Background Test',
-                                                    body: 'It works! You received this while the phone was locked.',
-                                                    url: '/settings'
-                                                })
-                                            })
-                                        } catch (e) {
-                                            console.error(e)
-                                        }
-                                    }, 5000)
-                                }}
-                            >
-                                Test with 5s Delay (Lock Screen)
-                            </Button>
-                        </div>
-                        <p className="text-xs text-gray-400 px-4">
-                            *If you don't receive notifications, check iPhone Settings {'>'} FM Logistics {'>'} Notifications.
-                        </p>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={async () => {
+                                const { registerPushNotifications } = await import('../lib/pushNotifications');
+                                if (profile?.id) {
+                                    await registerPushNotifications(profile.id);
+                                }
+                            }}
+                        >
+                            Enable
+                        </Button>
                     </div>
+                    <p className="text-xs text-gray-400 mt-4 px-1">
+                        Note: On iPhone, you must add this app to your Home Screen for notifications to work.
+                        Tap Share → Add to Home Screen, then open from the home screen icon.
+                    </p>
                 </CardContent>
             </Card>
         </div >
