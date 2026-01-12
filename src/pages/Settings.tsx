@@ -169,10 +169,33 @@ export default function Settings() {
             <Card className="mt-6">
                 <CardHeader>
                     <CardTitle>Notifications</CardTitle>
-                    <CardDescription>Test your device's push notification connection</CardDescription>
+                    <CardDescription>Manage your device's push connection</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100">
+                            <div>
+                                <h4 className="font-medium text-blue-900">Connection Status</h4>
+                                <p className="text-sm text-blue-700">Tap if notifications aren't working</p>
+                            </div>
+                            <Button
+                                type="button"
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                onClick={async () => {
+                                    alert('Starting manual registration...');
+                                    const { registerPushNotifications } = await import('../lib/pushNotifications');
+                                    // @ts-ignore
+                                    if (profile?.id) {
+                                        await registerPushNotifications(profile.id);
+                                        alert('Registration attempt finished. Check logs/popups.');
+                                    } else {
+                                        alert('Error: User ID missing. Please relogin.');
+                                    }
+                                }}
+                            >
+                                Reset & Enable
+                            </Button>
+                        </div>
                         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
                             <div>
                                 <h4 className="font-medium text-gray-900">Push Notifications</h4>
