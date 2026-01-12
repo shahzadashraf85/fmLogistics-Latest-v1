@@ -178,17 +178,17 @@ function DashboardLayout() {
               duration: 5000,
             })
 
-            // System Notification (works if tab is backgrounded/minimized)
-            if ('Notification' in window && Notification.permission === 'granted') {
-              try {
-                new Notification(`Job Update: ${payload.new.lot_number || 'Unknown Lot'}`, {
-                  body: `${payload.new.company_name} is now ${newStatus}`,
-                  icon: '/vite.svg'
-                })
-              } catch (e) {
-                console.error("Notification failed", e)
-              }
-            }
+            // Trigger Web Push (Backend)
+            // This ensures notification is sent even if app is backgrounded/closed on mobile
+            fetch('/api/send-push', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: `Job Update: ${payload.new.lot_number || 'Unknown Lot'}`,
+                body: `${payload.new.company_name} is now ${newStatus}`,
+                url: '/dashboard'
+              })
+            }).catch(err => console.error("Failed to trigger push:", err));
           }
         }
       )
