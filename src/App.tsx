@@ -173,11 +173,15 @@ function DashboardLayout() {
             })
 
             // System Notification (works if tab is backgrounded/minimized)
-            if (Notification.permission === 'granted') {
-              new Notification(`Job Update: ${payload.new.lot_number || 'Unknown Lot'}`, {
-                body: `${payload.new.company_name} is now ${newStatus}`,
-                icon: '/vite.svg'
-              })
+            if ('Notification' in window && Notification.permission === 'granted') {
+              try {
+                new Notification(`Job Update: ${payload.new.lot_number || 'Unknown Lot'}`, {
+                  body: `${payload.new.company_name} is now ${newStatus}`,
+                  icon: '/vite.svg'
+                })
+              } catch (e) {
+                console.error("Notification failed", e)
+              }
             }
           }
         }
@@ -185,8 +189,8 @@ function DashboardLayout() {
       .subscribe()
 
     // Request permission on load
-    if (Notification.permission === 'default') {
-      Notification.requestPermission()
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(e => console.error("Permission request failed", e))
     }
 
     return () => { supabase.removeChannel(channel) }
