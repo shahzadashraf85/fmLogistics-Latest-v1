@@ -23,7 +23,8 @@ export default function Users() {
         if (searchTerm) {
             const filtered = users.filter(u =>
                 u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                u.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+                u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                u.contact_number?.toLowerCase().includes(searchTerm.toLowerCase())
             )
             setFilteredUsers(filtered)
         } else {
@@ -156,6 +157,7 @@ export default function Users() {
                             <TableRow>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Full Name</TableHead>
+                                <TableHead>Contact Number</TableHead>
                                 <TableHead>Role</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -174,6 +176,18 @@ export default function Users() {
                                                 }
                                             }}
                                             className="h-8"
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Input
+                                            defaultValue={u.contact_number || ''}
+                                            onBlur={(e) => {
+                                                if (e.target.value !== u.contact_number) {
+                                                    updateUser(u.id, { contact_number: e.target.value })
+                                                }
+                                            }}
+                                            className="h-8 w-40"
+                                            placeholder="Add phone..."
                                         />
                                     </TableCell>
                                     <TableCell>
