@@ -12,17 +12,29 @@ self.skipWaiting()
 clientsClaim()
 
 self.addEventListener('push', (event) => {
+    console.log('[Service Worker] Push received:', event)
+
     const data = event.data ? event.data.json() : {}
+    console.log('[Service Worker] Push data:', data)
+
     const title = data.title || 'FM Logistics'
     const options = {
         body: data.body || 'New Notification',
         icon: '/pwa-192x192.png',
         badge: '/pwa-192x192.png',
         data: data.url || '/',
-        vibrate: [100, 50, 100]
+        vibrate: [100, 50, 100],
+        requireInteraction: false,
+        tag: 'fm-logistics-notification',
+        renotify: true
     }
 
-    event.waitUntil(self.registration.showNotification(title, options))
+    console.log('[Service Worker] Showing notification:', title, options)
+    event.waitUntil(
+        self.registration.showNotification(title, options)
+            .then(() => console.log('[Service Worker] Notification shown successfully'))
+            .catch(err => console.error('[Service Worker] Notification failed:', err))
+    )
 })
 
 self.addEventListener('notificationclick', (event) => {
