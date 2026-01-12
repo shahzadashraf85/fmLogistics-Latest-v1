@@ -68,14 +68,22 @@ export default async function handler(req, res) {
                 } else {
                     console.error('Error sending push:', err)
                 }
+                throw err; // Re-throw to be caught by Promise.allSettled as rejected
             })
         })
 
-        await Promise.all(promises)
+        const results = await Promise.allSettled(promises)
+        const successCount = results.filter(r => r.status === 'fulfilled').length
+        const failures = results.filter(r => r.status === 'rejected').map(r => r.reason.message)
 
-        return res.status(200).json({ success: true, count: promises.length })
+        return res.status(200).json({
+            success: true,
+            total: subscriptions.length,
+            sent: successCount,
+            failures: failures
+        })
     } catch (err) {
         console.error('Error in push handler:', err)
-        return res.status(500).json({ error: err.message })
+        return res.status(500).json({ error: err.message, stack: err.stack })
     }
 }

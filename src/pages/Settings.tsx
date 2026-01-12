@@ -193,7 +193,8 @@ export default function Settings() {
                                             })
                                         })
                                         if (res.ok) {
-                                            alert('Notification Sent! Check your status bar.')
+                                            const data = await res.json()
+                                            alert(`Notification Result:\nTotal Targets: ${data.total}\nSuccessfully Sent: ${data.sent}\nFailures: ${data.failures.length}\n${data.failures.join('\n')}`)
                                         } else {
                                             const err = await res.json()
                                             alert('Failed to send: ' + (err.error || 'Unknown error'))
