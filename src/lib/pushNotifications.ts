@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -24,8 +23,16 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export async function registerPushNotifications(userId: string) {
+    // Debug Alert 1: Start
+    // alert('Starting Push Registration...') 
+
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.log('Push notifications not supported')
+        alert('Push NOT supported on this browser/device')
+        return
+    }
+
+    if (!VAPID_PUBLIC_KEY) {
+        alert('Error: VAPID Public Key is MISSING in environment variables')
         return
     }
 
@@ -36,8 +43,9 @@ export async function registerPushNotifications(userId: string) {
         let subscription = await registration.pushManager.getSubscription()
 
         if (!subscription) {
-            if (!VAPID_PUBLIC_KEY) {
-                console.error("VAPID Public Key missing")
+            // Permission State
+            if (Notification.permission === 'denied') {
+                alert('Notification Permission is DENIED. Please reset in iOS Settings.')
                 return
             }
 
@@ -59,12 +67,14 @@ export async function registerPushNotifications(userId: string) {
             }, { onConflict: 'endpoint' })
 
         if (error) {
-            console.error('Failed to save push token:', error)
+            alert('Supabase DB Error: ' + error.message)
         } else {
-            console.log('Push notification registered successfully')
+            // Success!
+            console.log('Push Registered')
         }
 
-    } catch (error) {
-        console.error('Error registering push:', error)
+    } catch (error: any) {
+        alert('Registration Error: ' + error.message)
     }
 }
+
