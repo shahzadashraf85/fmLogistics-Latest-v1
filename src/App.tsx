@@ -167,24 +167,30 @@ function DashboardLayout() {
         { event: 'UPDATE', schema: 'public', table: 'jobs' },
         (payload: any) => {
           console.log("Realtime Payload:", payload) // Debugging
-          if ((payload.old && payload.new && payload.old.status !== payload.new.status) || (payload.eventType === 'UPDATE')) {
-            // Fallback: If old is missing (due to config), just assume it's an update we care about if status is present
-            const oldStatus = payload.old?.status ? payload.old.status.replace('_', ' ').toUpperCase() : 'PREVIOUS'
-            const newStatus = payload.new.status.replace('_', ' ').toUpperCase()
+
+          // Check if this is a status change
+          const oldStatus = payload.old?.status || 'unknown'
+          const newStatus = payload.new?.status || 'unknown'
+
+          console.log(`Status change detected: ${oldStatus} -> ${newStatus}`)
+
+          if (oldStatus !== newStatus) {
+            const oldStatusFormatted = oldStatus.replace('_', ' ').toUpperCase()
+            const newStatusFormatted = newStatus.replace('_', ' ').toUpperCase()
 
             // In-App Toast
             toast.info('Status Updated', {
-              description: `${payload.new.company_name}: ${oldStatus} -> ${newStatus}`,
+              description: `${payload.new.company_name}: ${oldStatusFormatted} -> ${newStatusFormatted}`,
               duration: 5000,
             })
 
             // Trigger Web Push (Backend)
-            // This ensures notification is sent even if app is backgrounded/closed on mobile
-            const statusFormatted = newStatus.toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())
+            const statusFormatted = newStatusFormatted.toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())
 
             // Extract short address (first part before comma)
             const shortAddress = payload.new.address ? payload.new.address.split(',')[0] : 'Unknown Address'
 
+            console.log('Sending push notification...')
             fetch('/api/send-push', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -193,7 +199,12 @@ function DashboardLayout() {
                 body: `${payload.new.company_name}, ${shortAddress} is ${statusFormatted}`,
                 url: '/dashboard'
               })
-            }).catch(err => console.error("Failed to trigger push:", err));
+            })
+              .then(res => res.json())
+              .then(data => console.log('Push sent:', data))
+              .catch(err => console.error("Failed to trigger push:", err));
+          } else {
+            console.log('No status change, skipping notification')
           }
         }
       )
