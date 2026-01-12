@@ -23,9 +23,6 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export async function registerPushNotifications(userId: string) {
-    // Debug Alert 1: Start
-    // alert('Starting Push Registration...') 
-
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         alert('Push NOT supported on this browser/device')
         return
@@ -36,17 +33,32 @@ export async function registerPushNotifications(userId: string) {
         return
     }
 
+    // Check current permission state
+    const currentPermission = Notification.permission
+    alert(`Current Permission: ${currentPermission}\n\nIf this says "denied", go to iPhone Settings > FM Logistics > Notifications and turn it ON.`)
+
     try {
         const registration = await navigator.serviceWorker.ready
 
         // Check if already subscribed
         let subscription = await registration.pushManager.getSubscription()
 
-        if (!subscription) {
+        if (subscription) {
+            alert(`Already subscribed!\nEndpoint: ${subscription.endpoint.substring(0, 50)}...`)
+        } else {
             // Permission State
             if (Notification.permission === 'denied') {
-                alert('Notification Permission is DENIED. Please reset in iOS Settings.')
+                alert('Notification Permission is DENIED. Go to iPhone Settings > FM Logistics > Notifications and enable it.')
                 return
+            }
+
+            if (Notification.permission === 'default') {
+                alert('Requesting permission now...')
+                const permission = await Notification.requestPermission()
+                if (permission !== 'granted') {
+                    alert(`Permission ${permission}. You must allow notifications.`)
+                    return
+                }
             }
 
             const convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
@@ -54,6 +66,8 @@ export async function registerPushNotifications(userId: string) {
                 userVisibleOnly: true,
                 applicationServerKey: convertedVapidKey
             })
+
+            alert(`New subscription created!\nEndpoint: ${subscription.endpoint.substring(0, 50)}...`)
         }
 
         // Save to Supabase
@@ -69,8 +83,7 @@ export async function registerPushNotifications(userId: string) {
         if (error) {
             alert('Supabase DB Error: ' + error.message)
         } else {
-            // Success!
-            console.log('Push Registered')
+            alert('✅ SUCCESS! Push subscription saved to database. Try the Test Notification button now.')
         }
 
     } catch (error: any) {
