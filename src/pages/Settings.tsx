@@ -206,6 +206,39 @@ export default function Settings() {
                                 Send Test
                             </Button>
                         </div>
+                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                            <div>
+                                <h4 className="font-medium text-gray-900">Push Notifications</h4>
+                                <p className="text-sm text-gray-500">Send a test alert to this device</p>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={async () => {
+                                    alert('Lock your screen NOW! sending in 5 seconds...');
+                                    setTimeout(async () => {
+                                        try {
+                                            await fetch('/api/send-push', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    title: 'Background Test',
+                                                    body: 'It works! You received this while the phone was locked.',
+                                                    url: '/settings'
+                                                })
+                                            })
+                                        } catch (e) {
+                                            console.error(e)
+                                        }
+                                    }, 5000)
+                                }}
+                            >
+                                Test with 5s Delay (Lock Screen)
+                            </Button>
+                        </div>
+                        <p className="text-xs text-gray-400 px-4">
+                            *If you don't receive notifications, check iPhone Settings {'>'} FM Logistics {'>'} Notifications.
+                        </p>
                     </div>
                 </CardContent>
             </Card>
