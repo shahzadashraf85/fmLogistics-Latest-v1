@@ -11,6 +11,8 @@ import { LogOut, User, Menu, X, Briefcase, Upload, Users as UsersIcon, Loader2, 
 import { useState, useEffect, type ReactNode } from 'react'
 import Settings from './pages/Settings'
 import SharedDashboard from './pages/SharedDashboard'
+import { Toaster, toast } from 'sonner'
+import { supabase } from './lib/supabaseClient'
 
 function Sidebar() {
   const { profile } = useAuth()
@@ -73,6 +75,8 @@ function Sidebar() {
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-medium text-gray-900 truncate">{profile?.full_name || 'User'}</p>
+
+              {profile?.contact_number && <p className="text-xs text-gray-600 truncate">{profile.contact_number}</p>}
               <p className="text-xs text-gray-500 truncate">{profile?.email}</p>
             </div>
           </div>
@@ -149,6 +153,30 @@ function AdminRoute({ children }: { children: ReactNode }) {
 function DashboardLayout() {
   const { profile, loading } = useAuth()
 
+
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('global-notifications')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'jobs' },
+        (payload: any) => {
+          if (payload.old && payload.new && payload.old.status !== payload.new.status) {
+            const oldStatus = payload.old.status.replace('_', ' ').toUpperCase()
+            const newStatus = payload.new.status.replace('_', ' ').toUpperCase()
+            toast.info('Status Updated', {
+              description: `${payload.new.company_name}: ${oldStatus} -> ${newStatus}`,
+              duration: 5000,
+            })
+          }
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
   if (loading) return <GlobalLoader />
 
   if (profile?.status === 'pending') return <Navigate to="/pending" replace />
@@ -173,6 +201,7 @@ function DashboardLayout() {
 function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-right" richColors />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/shared/:token" element={<SharedDashboard />} />

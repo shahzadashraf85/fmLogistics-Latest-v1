@@ -10,6 +10,8 @@ import { LogIn, UserPlus } from 'lucide-react'
 export default function Login() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [fullName, setFullName] = useState('')
+    const [contactNumber, setContactNumber] = useState('')
     const [loading, setLoading] = useState(false)
     const [isSignUp, setIsSignUp] = useState(false)
     const [msg, setMsg] = useState('')
@@ -32,6 +34,12 @@ export default function Login() {
                 const { error } = await supabase.auth.signUp({
                     email,
                     password,
+                    options: {
+                        data: {
+                            full_name: fullName,
+                            contact_number: contactNumber
+                        }
+                    }
                 })
                 if (error) throw error
                 setMsg('Signup successful! Check your email (if enabled) or sign in.')
@@ -72,6 +80,28 @@ export default function Login() {
                         </div>
                     )}
                     <form onSubmit={handleAuth} className="space-y-4">
+                        {isSignUp && (
+                            <>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Full Name</label>
+                                    <Input
+                                        placeholder="John Doe"
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        required={isSignUp}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Contact Number</label>
+                                    <Input
+                                        placeholder="+1 (555) 000-0000"
+                                        value={contactNumber}
+                                        onChange={(e) => setContactNumber(e.target.value)}
+                                        required={isSignUp}
+                                    />
+                                </div>
+                            </>
+                        )}
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Email</label>
                             <Input

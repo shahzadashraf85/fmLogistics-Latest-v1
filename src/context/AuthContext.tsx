@@ -6,6 +6,7 @@ export type Profile = {
     id: string
     email: string
     full_name: string | null
+    contact_number?: string | null
     role: 'admin' | 'employee'
     status: 'pending' | 'active'
     created_at: string
