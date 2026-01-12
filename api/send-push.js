@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Configure Web Push
-    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+    const vapidPublicKey = process.env.VITE_VAPID_PUBLIC_KEY
     const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY
     const vapidMailto = process.env.VAPID_MAILTO || 'mailto:admin@example.com'
 
