@@ -150,12 +150,16 @@ function AdminRoute({ children }: { children: ReactNode }) {
   return children
 }
 
+import { registerPushNotifications } from './lib/pushNotifications'
+
 function DashboardLayout() {
   const { profile, loading } = useAuth()
 
-
-
   useEffect(() => {
+    if (profile?.id) {
+      registerPushNotifications(profile.id)
+    }
+
     const channel = supabase
       .channel('global-notifications')
       .on(
