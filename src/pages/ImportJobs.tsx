@@ -37,6 +37,7 @@ export default function ImportJobs() {
     const [jobs, setJobs] = useState<JobDraft[]>([])
     const [showPreview, setShowPreview] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
 
     // Database State
     const [savedJobs, setSavedJobs] = useState<SavedJob[]>([])
@@ -52,17 +53,23 @@ export default function ImportJobs() {
     useEffect(() => {
         fetchSavedJobs()
         fetchUsers()
-    }, [])
+    }, [selectedDate])
 
     const fetchSavedJobs = async () => {
         setLoadingList(true)
 
         // 1. Fetch Jobs
-        const { data: jobsData, error: jobsError } = await supabase
+        let query = supabase
             .from('jobs')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(50)
+            .limit(100)
+
+        if (selectedDate) {
+            query = query.eq('job_date', selectedDate)
+        }
+
+        const { data: jobsData, error: jobsError } = await query
 
         if (jobsError || !jobsData) {
             console.error("Error fetching jobs:", jobsError)
@@ -364,14 +371,36 @@ export default function ImportJobs() {
 
             {/* SAVED JOBS LIST */}
             <div className="space-y-4 pt-10 border-t-2 border-dashed">
-                <div className="flex justify-between items-end">
+                <div className="flex justify-between items-end flex-wrap gap-4">
                     <div>
                         <h2 className="text-2xl font-bold">Imported Jobs (Database)</h2>
                         <p className="text-muted-foreground">Assign these jobs to employees</p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={fetchSavedJobs} disabled={loadingList}>
-                        {loadingList ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh List'}
-                    </Button>
+
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center space-x-2 bg-white p-1 rounded-lg border">
+                            <span className="text-xs font-medium pl-2 text-gray-500">Filter Date:</span>
+                            <input
+                                type="date"
+                                className="border-none text-sm focus:ring-0"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                            />
+                            {selectedDate && (
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedDate('')}>
+                                    <X className="h-3 w-3" />
+                                </Button>
+                            )}
+                        </div>
+
+                        <Button variant="outline" size="sm" onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}>
+                            Today
+                        </Button>
+
+                        <Button variant="outline" size="sm" onClick={fetchSavedJobs} disabled={loadingList}>
+                            {loadingList ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh'}
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
