@@ -248,6 +248,24 @@ export default function ImportJobs() {
                 const inserts = toAdd.map(uid => ({ job_id: assignJobId, user_id: uid }))
                 const { error } = await supabase.from('job_assignments').insert(inserts)
                 if (error) throw error
+
+                // Send Notifications to newly assigned users
+                const job = savedJobs.find(j => j.id === assignJobId)
+                if (job) {
+                    toAdd.forEach(userId => {
+                        console.log(`Sending assignment notification to ${userId}`)
+                        fetch('/api/send-push', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                title: 'New Job Assigned',
+                                body: `You have been assigned to ${job.company_name || 'a new job'}`,
+                                url: '/active-jobs',
+                                targetUserId: userId
+                            })
+                        }).catch(err => console.error("Failed to send assignment push:", err))
+                    })
+                }
             }
 
             setAssignJobId(null)
