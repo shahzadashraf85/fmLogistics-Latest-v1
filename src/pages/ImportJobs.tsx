@@ -133,6 +133,27 @@ export default function ImportJobs() {
         if (data) setUsers(data)
     }
 
+    // Helper to format date safely without timezone shift
+    const formatDateForDB = (dateStr: string | null) => {
+        if (!dateStr) return null;
+        if (dateStr.includes('/')) {
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                const m = parts[0].padStart(2, '0');
+                const d = parts[1].padStart(2, '0');
+                const y = parts[2];
+                // Ensure 4 digit year if possible, but usually AI gives YYYY
+                const fullYear = y.length === 2 ? `20${y}` : y;
+                return `${fullYear}-${m}-${d}`;
+            }
+        }
+        try {
+            return new Date(dateStr).toISOString().split('T')[0];
+        } catch (e) {
+            return new Date().toISOString().split('T')[0];
+        }
+    };
+
     const handleProcess = async () => {
         setProcessing(true)
         setError(null)
@@ -170,7 +191,7 @@ export default function ImportJobs() {
             const { data: { user } } = await supabase.auth.getUser()
 
             const dbRow = {
-                job_date: job.date ? new Date(job.date).toISOString().split('T')[0] : null,
+                job_date: formatDateForDB(job.date),
                 lot_number: job.lot_number,
                 created_by: user?.id,
                 company_name: job.company_name || null,
