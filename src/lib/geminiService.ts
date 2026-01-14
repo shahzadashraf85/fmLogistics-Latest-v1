@@ -80,6 +80,13 @@ export async function extractJobsWithGemini(rawText: string): Promise<ExtractedJ
         // 2. CALL THE API WITH THE FOUND MODEL
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModelName}:generateContent?key=${apiKey}`
 
+        const todayStr = new Date().toLocaleDateString('en-US');
+        const PROMPT_WITH_CONTEXT = `${EXTRACTION_PROMPT}
+        
+CONTEXT:
+The current date is ${todayStr}.
+RULE: If a job date is not explicitly mentioned in the text, you MUST use "${todayStr}" as the date. DO NOT return null for date.`;
+
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -88,7 +95,7 @@ export async function extractJobsWithGemini(rawText: string): Promise<ExtractedJ
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: `${EXTRACTION_PROMPT}\n\nEXTRACT FROM THIS TEXT:\n\n${rawText}`
+                        text: `${PROMPT_WITH_CONTEXT}\n\nEXTRACT FROM THIS TEXT:\n\n${rawText}`
                     }]
                 }],
                 generationConfig: {
@@ -129,11 +136,14 @@ export async function extractJobsWithGemini(rawText: string): Promise<ExtractedJ
 // Fallback for v1 endpoint
 async function extractFallback(rawText: string) {
     const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`
+    const todayStr = new Date().toLocaleDateString('en-US');
+    const PROMPT_WITH_CONTEXT = `${EXTRACTION_PROMPT}\nCONTEXT: Current date is ${todayStr}. Default to this if date missing.`;
+
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            contents: [{ parts: [{ text: `${EXTRACTION_PROMPT}\n\nEXTRACT FROM THIS TEXT:\n\n${rawText}` }] }]
+            contents: [{ parts: [{ text: `${PROMPT_WITH_CONTEXT}\n\nEXTRACT FROM THIS TEXT:\n\n${rawText}` }] }]
         })
     })
     const data = await response.json()

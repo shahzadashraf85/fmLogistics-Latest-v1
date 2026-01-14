@@ -140,8 +140,16 @@ export default function ImportJobs() {
             const extractedJobs = await extractJobsWithGemini(rawText)
             const jobDrafts: JobDraft[] = extractedJobs.map((job, index) => {
                 const issues: string[] = []
+
+                // Auto-fill date if missing
+                if (!job.date) {
+                    job.date = new Date().toLocaleDateString('en-US');
+                }
+
+                // Validate if it's still invalid (unlikely now)
                 if (!job.date) issues.push('missing_date')
                 if (!job.lot_number) issues.push('missing_lot')
+
                 return { ...job, temp_id: `J${index + Date.now()}`, issues, status: 'pending' }
             })
             setJobs(jobDrafts)
