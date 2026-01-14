@@ -43,14 +43,14 @@ Return ONLY valid JSON array with this exact structure:
 If a field is not found, use null. Do NOT include any markdown formatting, just pure JSON.`
 
 // Reliable models to try in order
-const MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
+const MODELS = ['gemini-1.5-flash', 'gemini-pro'];
 
 export async function extractJobsWithGemini(rawText: string): Promise<ExtractedJob[]> {
     if (!apiKey || apiKey === 'your_gemini_api_key_here') {
         throw new Error('Gemini API key not configured')
     }
 
-    let lastError: any;
+    let firstError: any = null;
 
     const todayStr = new Date().toLocaleDateString('en-US');
     const PROMPT_WITH_CONTEXT = `${EXTRACTION_PROMPT}
@@ -82,6 +82,7 @@ RULE: If a job date is not explicitly mentioned in the text, you MUST use "${tod
             if (!response.ok) {
                 const errData = await response.json();
                 console.warn(`Model ${model} failed:`, errData);
+                if (!firstError) firstError = new Error(`${model} failed: ${errData.error?.message || response.statusText}`);
                 throw new Error(errData.error?.message || response.statusText);
             }
 
@@ -94,13 +95,12 @@ RULE: If a job date is not explicitly mentioned in the text, you MUST use "${tod
             return JSON.parse(cleanedText);
 
         } catch (err) {
-            console.error(`Attempt with ${model} failed.`, err);
-            lastError = err;
+            console.error(`Attempt with ${model} failed.`);
             // Continue to next model
         }
     }
 
-    throw new Error(`All AI models failed. Last error: ${lastError?.message || 'Unknown error'}`);
+    throw new Error(`All AI models failed. Primary error: ${firstError?.message || 'Unknown error'}`);
 }
 
 
