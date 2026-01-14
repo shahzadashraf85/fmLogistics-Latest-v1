@@ -261,12 +261,16 @@ export default function ImportJobs() {
 
                     const promises = toAdd.map(userId => {
                         console.log(`Sending assignment notification to ${userId}`)
+
+                        const shortAddress = job.address ? job.address.split(',')[0] : '';
+                        const notificationBody = `You have been assigned to ${job.company_name || 'a new job'}${shortAddress ? ' at ' + shortAddress : ''}`;
+
                         return fetch('/api/send-push', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 title: 'New Job Assigned',
-                                body: `You have been assigned to ${job.company_name || 'a new job'}`,
+                                body: notificationBody,
                                 url: '/active-jobs',
                                 targetUserId: userId
                             })
