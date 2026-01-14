@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import type { Job } from '../../types/job';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
+import { Calendar } from 'lucide-react';
 
 interface Profile {
     id: string;
@@ -13,15 +16,23 @@ export default function AssignJobs() {
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [assignments, setAssignments] = useState<Record<string, string[]>>({}); // job_id -> user_ids
     const [loading, setLoading] = useState(true);
+    const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [selectedDate]);
 
     const loadData = async () => {
         setLoading(true);
+
+        let jobQuery = supabase.from('jobs').select('*').order('created_at', { ascending: false });
+
+        if (selectedDate) {
+            jobQuery = jobQuery.eq('job_date', selectedDate);
+        }
+
         const [jobsRes, profilesRes, assignmentsRes] = await Promise.all([
-            supabase.from('jobs').select('*').order('created_at', { ascending: false }),
+            jobQuery,
             supabase.from('profiles').select('*').eq('role', 'employee'), // Only assign to employees
             supabase.from('job_assignments').select('*')
         ]);
@@ -59,6 +70,35 @@ export default function AssignJobs() {
     return (
         <div className="p-6">
             <h1 className="text-2xl font-bold mb-6">Assign Jobs</h1>
+
+            <div className="flex flex-wrap items-center gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border">
+                <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-gray-500" />
+                    <label className="text-sm font-medium">Filter Date:</label>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="w-auto"
+                    />
+                    <Button
+                        variant="outline"
+                        onClick={() => setSelectedDate('')}
+                        size="sm"
+                    >
+                        Show All
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+                        size="sm"
+                    >
+                        Today
+                    </Button>
+                </div>
+            </div>
 
             <div className="overflow-x-auto bg-white dark:bg-gray-800 shadow rounded">
                 <table className="min-w-full text-sm">
