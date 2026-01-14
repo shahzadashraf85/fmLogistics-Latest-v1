@@ -5,6 +5,7 @@ import { Check, AlertTriangle, Loader2, X, MapPin, Sparkles, UserPlus } from 'lu
 import { Badge } from '../components/ui/badge'
 import { extractJobsWithGemini, type ExtractedJob } from '../lib/geminiService'
 import { supabase } from '../lib/supabaseClient'
+import { toast } from 'sonner'
 
 interface JobDraft extends ExtractedJob {
     temp_id: string
@@ -224,6 +225,7 @@ export default function ImportJobs() {
     }
 
     const handleAssign = async () => {
+        console.log("Handle Assign Triggered", { assignJobId, selectedUserIds })
         if (!assignJobId) return
         setIsAssigning(true)
         try {
@@ -234,10 +236,13 @@ export default function ImportJobs() {
                 .eq('job_id', assignJobId)
 
             const currentIds = current?.map(c => c.user_id) || []
+            console.log("Current Assignments:", currentIds)
 
             // 2. Diff
             const toAdd = selectedUserIds.filter(id => !currentIds.includes(id))
             const toRemove = currentIds.filter(id => !selectedUserIds.includes(id))
+
+            console.log("Diff:", { toAdd, toRemove })
 
             // 3. Sync
             if (toRemove.length > 0) {
@@ -252,9 +257,11 @@ export default function ImportJobs() {
                 // Send Notifications to newly assigned users
                 const job = savedJobs.find(j => j.id === assignJobId)
                 if (job) {
-                    toAdd.forEach(userId => {
+                    toast.info(`Sending ${toAdd.length} notifications...`)
+
+                    const promises = toAdd.map(userId => {
                         console.log(`Sending assignment notification to ${userId}`)
-                        fetch('/api/send-push', {
+                        return fetch('/api/send-push', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -263,15 +270,30 @@ export default function ImportJobs() {
                                 url: '/active-jobs',
                                 targetUserId: userId
                             })
-                        }).catch(err => console.error("Failed to send assignment push:", err))
+                        })
+                            .then(res => res.json())
+                            .then(data => {
+                                console.log('Push API Response:', data);
+                                if (data.sent === 0) toast.warning(`User ${userId.slice(0, 4)}... has no active push subscription.`);
+                            })
+                            .catch(err => {
+                                console.error("Failed to send assignment push:", err);
+                                toast.error("Push failed: " + err.message);
+                            })
                     })
+
+                    await Promise.all(promises);
                 }
+            } else {
+                console.log("No new users to assign, skipping notification")
             }
 
             setAssignJobId(null)
             setSelectedUserIds([])
             fetchSavedJobs()
+            toast.success("Assignment updated")
         } catch (err: any) {
+            console.error("Assignment Error:", err)
             alert('Assignment update failed: ' + err.message)
         } finally {
             setIsAssigning(false)
