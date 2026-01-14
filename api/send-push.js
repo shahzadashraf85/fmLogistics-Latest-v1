@@ -8,7 +8,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' })
     }
 
-    const { title, body, url } = req.body
+    const { title, body, url, targetUserId } = req.body
 
     if (!title || !body) {
         return res.status(400).json({ error: 'Missing title or body' })
@@ -40,10 +40,14 @@ export default async function handler(req, res) {
     webpush.setVapidDetails(vapidMailto, vapidPublicKey, vapidPrivateKey)
 
     try {
-        // 1. Get all subscriptions
-        const { data: subscriptions, error } = await supabase
-            .from('push_subscriptions')
-            .select('*')
+        // 1. Get subscriptions
+        let query = supabase.from('push_subscriptions').select('*')
+
+        if (targetUserId) {
+            query = query.eq('user_id', targetUserId)
+        }
+
+        const { data: subscriptions, error } = await query
 
         if (error) throw error
 
