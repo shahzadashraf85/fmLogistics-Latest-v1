@@ -42,115 +42,68 @@ Return ONLY valid JSON array with this exact structure:
 
 If a field is not found, use null. Do NOT include any markdown formatting, just pure JSON.`
 
+// Reliable models to try in order
+const MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
+
 export async function extractJobsWithGemini(rawText: string): Promise<ExtractedJob[]> {
     if (!apiKey || apiKey === 'your_gemini_api_key_here') {
         throw new Error('Gemini API key not configured')
     }
 
-    try {
-        // 1. DYNAMICALLY FIND AVAILABLE MODELS
-        // We check v1beta which usually lists all available models
-        const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
+    let lastError: any;
 
-        if (!listResponse.ok) {
-            const err = await listResponse.json()
-            throw new Error(`Failed to list models: ${err.error?.message || listResponse.statusText}`)
-        }
+    const todayStr = new Date().toLocaleDateString('en-US');
+    const PROMPT_WITH_CONTEXT = `${EXTRACTION_PROMPT}
 
-        const listData = await listResponse.json()
-        const availableModels = listData.models || []
-
-        // Find first model that supports generateContent and is a gemini model
-        const usableModel = availableModels.find((m: any) =>
-            m.name.includes('gemini') &&
-            m.supportedGenerationMethods?.includes('generateContent')
-        )
-
-        if (!usableModel) {
-            console.warn('No specific Gemini model found, falling back to gemini-1.5-flash-latest')
-        }
-
-        // Use the found model name (e.g. "models/gemini-1.5-flash") or fallback
-        const modelName = usableModel ? usableModel.name : 'models/gemini-1.5-flash-latest'
-        // Ensure we don't double prefix "models/"
-        const cleanModelName = modelName.replace('models/', '')
-
-        console.log(`Using dynamically selected model: ${cleanModelName}`)
-
-        // 2. CALL THE API WITH THE FOUND MODEL
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModelName}:generateContent?key=${apiKey}`
-
-        const todayStr = new Date().toLocaleDateString('en-US');
-        const PROMPT_WITH_CONTEXT = `${EXTRACTION_PROMPT}
-        
 CONTEXT:
 The current date is ${todayStr}.
 RULE: If a job date is not explicitly mentioned in the text, you MUST use "${todayStr}" as the date. DO NOT return null for date.`;
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: `${PROMPT_WITH_CONTEXT}\n\nEXTRACT FROM THIS TEXT:\n\n${rawText}`
-                    }]
-                }],
-                generationConfig: {
-                    temperature: 0.1,
-                    maxOutputTokens: 8192,
-                }
-            })
-        })
+    // Try models in sequence
+    for (const model of MODELS) {
+        try {
+            console.log(`Attempting extraction with model: ${model}`);
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-        if (!response.ok) {
-            const errorData = await response.json()
-            // If dynamic/beta failed, try one last desperation shot with v1 and gemini-pro
-            if (cleanModelName !== 'gemini-pro') {
-                console.log("Primary attempt failed, trying fallback to v1/gemini-pro...")
-                return extractFallback(rawText)
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: `${PROMPT_WITH_CONTEXT}\n\nEXTRACT FROM THIS TEXT:\n\n${rawText}` }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.1,
+                        maxOutputTokens: 8192,
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                console.warn(`Model ${model} failed:`, errData);
+                throw new Error(errData.error?.message || response.statusText);
             }
-            throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`)
+
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!text) throw new Error('No content returned from AI');
+
+            const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            return JSON.parse(cleanedText);
+
+        } catch (err) {
+            console.error(`Attempt with ${model} failed.`, err);
+            lastError = err;
+            // Continue to next model
         }
-
-        const data = await response.json()
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text
-
-        if (!text) {
-            throw new Error('No response from Gemini API')
-        }
-
-        // Clean up response
-        const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-
-        const jobs = JSON.parse(cleanedText)
-        return jobs
-    } catch (error) {
-        console.error('Gemini extraction error:', error)
-        throw error
     }
+
+    throw new Error(`All AI models failed. Last error: ${lastError?.message || 'Unknown error'}`);
 }
 
-// Fallback for v1 endpoint
-async function extractFallback(rawText: string) {
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`
-    const todayStr = new Date().toLocaleDateString('en-US');
-    const PROMPT_WITH_CONTEXT = `${EXTRACTION_PROMPT}\nCONTEXT: Current date is ${todayStr}. Default to this if date missing.`;
 
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: `${PROMPT_WITH_CONTEXT}\n\nEXTRACT FROM THIS TEXT:\n\n${rawText}` }] }]
-        })
-    })
-    const data = await response.json()
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text
-    if (!text) throw new Error('Fallback failed')
-    return JSON.parse(text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
-}
 
 export function isGeminiConfigured(): boolean {
     return apiKey !== undefined && apiKey !== 'your_gemini_api_key_here'
