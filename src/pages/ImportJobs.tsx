@@ -304,6 +304,31 @@ export default function ImportJobs() {
         }
     }
 
+    const handleUnassignAll = async () => {
+        if (!selectedDate) return
+        if (!confirm(`Are you sure you want to REMOVE ALL assignments for ${selectedDate}? This cannot be undone.`)) return
+
+        setLoadingList(true)
+        try {
+            // Find jobs for this date
+            const { data: jobs } = await supabase.from('jobs').select('id').eq('job_date', selectedDate)
+
+            if (jobs && jobs.length > 0) {
+                const jobIds = jobs.map(j => j.id)
+                const { error } = await supabase.from('job_assignments').delete().in('job_id', jobIds)
+                if (error) throw error
+                toast.success(`Unassigned ${jobs.length} jobs for ${selectedDate}`)
+                fetchSavedJobs()
+            } else {
+                toast.info("No jobs found for this date")
+            }
+        } catch (err: any) {
+            alert("Error: " + err.message)
+        } finally {
+            setLoadingList(false)
+        }
+    }
+
     const toggleUserSelection = (userId: string) => {
         setSelectedUserIds(prev => prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId])
     }
@@ -444,6 +469,12 @@ export default function ImportJobs() {
                         <Button variant="outline" size="sm" onClick={fetchSavedJobs} disabled={loadingList}>
                             {loadingList ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh'}
                         </Button>
+
+                        {selectedDate && (
+                            <Button variant="destructive" size="sm" onClick={handleUnassignAll} disabled={loadingList}>
+                                <X className="h-4 w-4 mr-1" /> Reset Assignments
+                            </Button>
+                        )}
                     </div>
                 </div>
 
