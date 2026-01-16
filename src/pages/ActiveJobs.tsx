@@ -509,8 +509,18 @@ export default function ActiveJobs() {
             );
 
             if (conflictingJob) {
-                setConflict({ newJob: job, newStatus, oldJob: conflictingJob });
-                return;
+                // Check if ANY OTHER user is active on this job
+                const isCoveredByOthers = conflictingJob.assigned_users?.some(u =>
+                    u.user_id !== userId && (u.status === 'on_way' || u.status === 'on_site')
+                );
+
+                if (isCoveredByOthers) {
+                    // Auto-resolve: Reset my status on the old job to 'pending'
+                    await executeStatusUpdate(conflictingJob, 'pending');
+                } else {
+                    setConflict({ newJob: job, newStatus, oldJob: conflictingJob });
+                    return;
+                }
             }
         }
         executeStatusUpdate(job, newStatus)
