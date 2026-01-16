@@ -9,6 +9,7 @@ export interface Job {
     contact_name: string
     contact_detail: string
     status: string
+    last_updated_by?: string
     assigned_users?: { full_name: string, user_id: string }[]
 }
 
@@ -26,5 +27,6 @@ export interface EmployeeStats {
         lot_number: string
         address: string
         status: 'on_way' | 'on_site'
+        is_priority?: boolean
     }
 }

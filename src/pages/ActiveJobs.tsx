@@ -19,6 +19,7 @@ interface Job {
     contact_detail: string
     assigned_at?: string
     status: string
+    last_updated_by?: string
     assigned_users?: { full_name: string, user_id: string }[]
     distance?: number | null
 }
@@ -34,7 +35,7 @@ export default function ActiveJobs() {
     const [filterMode, setFilterMode] = useState<'mine' | 'all'>('mine')
     const [dateFilter, setDateFilter] = useState<string>(new Date().toISOString().split('T')[0]) // Default to today
     const [userId, setUserId] = useState<string | null>(null)
-    const [userRole, setUserRole] = useState<string | null>(null)
+
     const [userLocation, setUserLocation] = useState<UserLocation | null>(null)
     const [calculatingDistances, setCalculatingDistances] = useState(false)
     const [distancesCalculated, setDistancesCalculated] = useState(false)
@@ -349,14 +350,7 @@ export default function ActiveJobs() {
             const { data: { user } } = await supabase.auth.getUser()
             setUserId(user?.id || null)
 
-            if (user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', user.id)
-                    .single()
-                setUserRole(profile?.role || 'employee')
-            }
+
 
             // 2. Determine Job IDs to fetch based on filter mode
             let targetJobIds: string[] | null = null
@@ -441,22 +435,42 @@ export default function ActiveJobs() {
         }
     }
 
-    const canUpdateStatus = (job: Job) => {
-        if (userRole === 'admin') return true
-        return job.assigned_users?.some(u => u.user_id === userId)
+    const canUpdateStatus = (_: Job) => {
+        // Allow everyone to view buttons; permission logic is now in updateStatus
+        return true
     }
 
     const updateStatus = async (job: Job, newStatus: string) => {
-        if (!canUpdateStatus(job)) {
-            alert("You can only update status for your assigned jobs.")
-            return
+        const isAssigned = job.assigned_users?.some(u => u.user_id === userId)
+
+        // "allow all user to change status of job but if job is not assign to him... ask a pop up"
+        if (!isAssigned) {
+            const confirmed = window.confirm("This job is not assigned to you. Do you want to proceed?")
+            if (!confirmed) return
+
+            // "if he proceed then assign this job him also"
+            if (userId) {
+                const { error: assignError } = await supabase
+                    .from('job_assignments')
+                    .insert({ job_id: job.id, user_id: userId })
+
+                if (assignError) {
+                    console.error("Assignment error:", assignError)
+                    alert("Failed to assign job. Please try again.")
+                    return
+                }
+
+                // Refresh to show assignment immediately
+                fetchUserAndJobs()
+            }
         }
 
-        setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: newStatus } : j))
+        // Optimistic update
+        setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: newStatus, last_updated_by: userId || undefined } : j))
 
         const { error } = await supabase
             .from('jobs')
-            .update({ status: newStatus })
+            .update({ status: newStatus, last_updated_by: userId })
             .eq('id', job.id)
 
         if (error) {
