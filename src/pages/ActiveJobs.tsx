@@ -6,6 +6,7 @@ import { Input } from '../components/ui/input'
 import { MapPin, Calendar, Truck, User, Phone, CheckCircle, Navigation, Package, RefreshCw, MessageSquare, Locate, X } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { cn } from '../lib/utils'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog'
 
 interface Job {
     id: string
@@ -39,6 +40,7 @@ export default function ActiveJobs() {
     const [userLocation, setUserLocation] = useState<UserLocation | null>(null)
     const [calculatingDistances, setCalculatingDistances] = useState(false)
     const [distancesCalculated, setDistancesCalculated] = useState(false)
+    const [conflict, setConflict] = useState<{ newJob: Job, newStatus: string, oldJob: Job } | null>(null)
     const calculationInProgress = useRef(false)
     const distanceCache = useRef<Record<string, number | null>>({})
 
@@ -440,7 +442,7 @@ export default function ActiveJobs() {
         return true
     }
 
-    const updateStatus = async (job: Job, newStatus: string) => {
+    const executeStatusUpdate = async (job: Job, newStatus: string) => {
         const isAssigned = job.assigned_users?.some(u => u.user_id === userId)
 
         // "allow all user to change status of job but if job is not assign to him... ask a pop up"
@@ -477,6 +479,30 @@ export default function ActiveJobs() {
             alert("Failed to update status")
             fetchUserAndJobs()
         }
+    }
+
+    const updateStatus = async (job: Job, newStatus: string) => {
+        if (newStatus === 'on_way' || newStatus === 'on_site') {
+            const conflictingJob = jobs.find(j =>
+                j.id !== job.id &&
+                (j.status === 'on_way' || j.status === 'on_site') &&
+                j.assigned_users?.some(u => u.user_id === userId) &&
+                (j.last_updated_by === userId || !j.last_updated_by)
+            );
+
+            if (conflictingJob) {
+                setConflict({ newJob: job, newStatus, oldJob: conflictingJob });
+                return;
+            }
+        }
+        executeStatusUpdate(job, newStatus)
+    }
+
+    const resolveConflict = async (action: 'picked_up' | 'pending') => {
+        if (!conflict) return
+        setConflict(null)
+        await executeStatusUpdate(conflict.oldJob, action)
+        await executeStatusUpdate(conflict.newJob, conflict.newStatus)
     }
 
     const getStatusColor = (status: string) => {
@@ -739,6 +765,30 @@ export default function ActiveJobs() {
                     })}
                 </div>
             )}
+
+            <Dialog open={!!conflict} onOpenChange={(open) => !open && setConflict(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Unfinished Job Detected</DialogTitle>
+                        <DialogDescription>
+                            You currently have <strong>{conflict?.oldJob.company_name}</strong> marked as "{conflict?.oldJob.status?.replace('_', ' ')}".
+                            <br /><br />
+                            What should happen to this job?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex-col sm:flex-row gap-2">
+                        <Button variant="outline" onClick={() => setConflict(null)}>
+                            Cancel
+                        </Button>
+                        <Button variant="secondary" onClick={() => resolveConflict('pending')}>
+                            Reset to Pending
+                        </Button>
+                        <Button onClick={() => resolveConflict('picked_up')} className="bg-amber-600 hover:bg-amber-700 text-white">
+                            Mark Picked Up
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
