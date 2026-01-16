@@ -7,7 +7,7 @@ import ActiveJobs from './pages/ActiveJobs'
 import ImportJobs from './pages/ImportJobs'
 import Dashboard from './pages/Dashboard'
 import { Button } from './components/ui/button'
-import { LogOut, User, Menu, X, Briefcase, Upload, Users as UsersIcon, Loader2, LayoutDashboard, Settings as SettingsIcon } from 'lucide-react'
+import { LogOut, User, Menu, X, Briefcase, Upload, Users as UsersIcon, Loader2, LayoutDashboard, Settings as SettingsIcon, RotateCw } from 'lucide-react'
 import { useState, useEffect, type ReactNode } from 'react'
 import Settings from './pages/Settings'
 import SharedDashboard from './pages/SharedDashboard'
@@ -43,8 +43,15 @@ function Sidebar() {
           } lg:translate-x-0 w-64 flex flex-col`}
       >
         <div className="p-6 border-b">
-          <h1 className="text-xl font-bold text-gray-900">FM Logistics Services</h1>
-          <p className="text-sm text-gray-500">{profile?.role === 'admin' ? 'Admin Portal' : 'Employee Portal'}</p>
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-gray-900 leading-tight">FM Logistics</h1>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => window.location.reload()} title="Reload App">
+              <RotateCw className="h-4 w-4" />
+            </Button>
+          </div>
+          {/* Added Services on new line if needed or keep inline */}
+          <h1 className="text-xl font-bold text-gray-900 mb-1">Services</h1>
+          <p className="text-sm text-gray-500">{profile?.role === 'admin' ? 'Admin Panel' : 'Employee Portal'}</p>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
