@@ -475,18 +475,21 @@ export default function ActiveJobs() {
             const newAssignments = j.assigned_users?.map(u =>
                 u.user_id === userId ? { ...u, status: newStatus } : u
             );
-            // If I wasn't assigned before, I am now (handled by fetch usually, but helpful for optimistic)
-            // For now, simple optimistic update of status
-            return { ...j, status: newStatus, last_updated_by: userId || undefined, assigned_users: newAssignments };
+
+            // Check if others are active
+            const othersActive = j.assigned_users?.some(u =>
+                u.user_id !== userId && (u.status === 'on_way' || u.status === 'on_site')
+            );
+
+            let nextGlobalStatus = newStatus;
+            if ((newStatus === 'pending' || newStatus === 'picked_up' || newStatus === 'delivered') && othersActive) {
+                nextGlobalStatus = j.status;
+            }
+
+            return { ...j, status: nextGlobalStatus, last_updated_by: userId || undefined, assigned_users: newAssignments };
         }))
 
-        // 1. Update Global Job Status (Legacy/Admin View)
-        const { error } = await supabase
-            .from('jobs')
-            .update({ status: newStatus, last_updated_by: userId })
-            .eq('id', job.id)
-
-        // 2. Update My Personal Assignment Status (New Logic)
+        // 1. Update My Personal Assignment Status (ALWAYS, first priority)
         if (userId) {
             await supabase
                 .from('job_assignments')
@@ -495,9 +498,29 @@ export default function ActiveJobs() {
                 .eq('user_id', userId)
         }
 
-        if (error) {
-            alert("Failed to update status")
-            fetchUserAndJobs()
+        // 2. Update Global Job Status (CONDITIONAL)
+        let shouldUpdateGlobal = true;
+
+        if (newStatus === 'pending' || newStatus === 'picked_up' || newStatus === 'delivered') {
+            const othersActive = job.assigned_users?.some(u =>
+                u.user_id !== userId && (u.status === 'on_way' || u.status === 'on_site')
+            );
+
+            if (othersActive) {
+                shouldUpdateGlobal = false;
+            }
+        }
+
+        if (shouldUpdateGlobal) {
+            const { error } = await supabase
+                .from('jobs')
+                .update({ status: newStatus, last_updated_by: userId })
+                .eq('id', job.id)
+
+            if (error) {
+                alert("Failed to update status")
+                fetchUserAndJobs()
+            }
         }
     }
 
@@ -526,11 +549,27 @@ export default function ActiveJobs() {
         executeStatusUpdate(job, newStatus)
     }
 
-    const resolveConflict = async (action: 'picked_up' | 'pending') => {
+    const resolveConflict = async (action: 'picked_up' | 'pending' | 'unassign') => {
         if (!conflict) return
         setConflict(null)
-        await executeStatusUpdate(conflict.oldJob, action)
-        await executeStatusUpdate(conflict.newJob, conflict.newStatus)
+
+        if (action === 'unassign') {
+            // Unassign me from the old job
+            const { error } = await supabase
+                .from('job_assignments')
+                .delete()
+                .eq('job_id', conflict.oldJob.id)
+                .eq('user_id', userId)
+
+            if (error) console.error("Unassign error", error)
+
+            // Proceed to update the NEW job
+            await executeStatusUpdate(conflict.newJob, conflict.newStatus)
+            fetchUserAndJobs() // Refresh to remove the assignment from view
+        } else {
+            await executeStatusUpdate(conflict.oldJob, action)
+            await executeStatusUpdate(conflict.newJob, conflict.newStatus)
+        }
     }
 
     const getStatusColor = (status: string) => {
@@ -804,9 +843,12 @@ export default function ActiveJobs() {
                             What should happen to this job?
                         </DialogDescription>
                     </DialogHeader>
-                    <DialogFooter className="flex-col sm:flex-row gap-2">
+                    <DialogFooter className="flex flex-col gap-2 sm:flex-row">
                         <Button variant="outline" onClick={() => setConflict(null)}>
                             Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={() => resolveConflict('unassign')}>
+                            Unassign Me
                         </Button>
                         <Button variant="secondary" onClick={() => resolveConflict('pending')}>
                             Reset to Pending
