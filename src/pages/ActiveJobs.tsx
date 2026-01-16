@@ -111,10 +111,17 @@ export default function ActiveJobs() {
             calculationInProgress.current = true
             setDistancesCalculated(true)
 
-            calculateDistancesForJobs(jobs).then(updatedJobs => {
+            calculateDistancesForJobs(jobs).then(calculatedResults => {
                 console.log("Distance calculation complete, updating jobs")
-                console.log("Updated jobs with distances:", updatedJobs.map(j => ({ name: j.company_name, distance: j.distance })))
-                setJobs(updatedJobs)
+
+                setJobs(currentJobs => {
+                    const distanceMap = new Map(calculatedResults.map(j => [j.id, j.distance]));
+                    return currentJobs.map(job => ({
+                        ...job,
+                        distance: distanceMap.has(job.id) ? distanceMap.get(job.id) : job.distance
+                    }));
+                })
+
                 calculationInProgress.current = false
             }).catch(error => {
                 console.error("Distance calculation error:", error)
