@@ -23,36 +23,32 @@ export const calculateEmployeeStats = (jobsList: Job[]): EmployeeStats[] => {
             const stats = statsMap[user.user_id]
             stats.total_jobs++
 
-            switch (job.status) {
+            const userStatus = user.status || 'pending'
+
+            switch (userStatus) {
                 case 'pending':
                     stats.pending++
                     break
                 case 'on_way':
                     stats.on_way++
-                    // Only set active job if THIS user updated it (User Intent)
-                    // If active_job is already set by THIS user, keep the first one (or could prioritize newest if we had timestamps here)
-                    // If active_job is not set, set it.
-                    if (job.last_updated_by === user.user_id) {
-                        if (!stats.active_job || (stats.active_job && !stats.active_job.is_priority)) {
-                            stats.active_job = {
-                                lot_number: job.lot_number,
-                                address: job.address,
-                                status: 'on_way',
-                                is_priority: true
-                            }
+                    // Priority logic: If user marked this as ON WAY, it's their active job.
+                    if (!stats.active_job || (stats.active_job && !stats.active_job.is_priority)) {
+                        stats.active_job = {
+                            lot_number: job.lot_number,
+                            address: job.address,
+                            status: 'on_way',
+                            is_priority: true
                         }
                     }
                     break
                 case 'on_site':
                     stats.on_site++
-                    if (job.last_updated_by === user.user_id) {
-                        if (!stats.active_job || (stats.active_job && !stats.active_job.is_priority)) {
-                            stats.active_job = {
-                                lot_number: job.lot_number,
-                                address: job.address,
-                                status: 'on_site',
-                                is_priority: true
-                            }
+                    if (!stats.active_job || (stats.active_job && !stats.active_job.is_priority)) {
+                        stats.active_job = {
+                            lot_number: job.lot_number,
+                            address: job.address,
+                            status: 'on_site',
+                            is_priority: true
                         }
                     }
                     break

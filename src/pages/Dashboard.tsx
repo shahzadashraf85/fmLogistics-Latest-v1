@@ -64,7 +64,7 @@ export default function Dashboard() {
                 // Fetch assignments
                 const { data: assignments } = await supabase
                     .from('job_assignments')
-                    .select('job_id, user_id')
+                    .select('job_id, user_id, status')
                     .in('job_id', jobIds)
 
                 // Fetch user profiles
@@ -86,7 +86,8 @@ export default function Dashboard() {
                     const assignedUsers = jobAssignments.map((ja: any) => ({
                         full_name: userMap[ja.user_id]?.name || 'Unknown',
                         contact_number: userMap[ja.user_id]?.contact || undefined,
-                        user_id: ja.user_id
+                        user_id: ja.user_id,
+                        status: ja.status
                     }))
 
                     return {

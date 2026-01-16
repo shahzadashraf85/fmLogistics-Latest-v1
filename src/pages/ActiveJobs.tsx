@@ -21,7 +21,7 @@ interface Job {
     assigned_at?: string
     status: string
     last_updated_by?: string
-    assigned_users?: { full_name: string, user_id: string }[]
+    assigned_users?: { full_name: string, user_id: string, status?: string }[]
     distance?: number | null
 }
 
@@ -395,7 +395,7 @@ export default function ActiveJobs() {
 
                 const { data: assignments } = await supabase
                     .from('job_assignments')
-                    .select('job_id, user_id')
+                    .select('job_id, user_id, status')
                     .in('job_id', jobIds)
 
                 let userMap: Record<string, string> = {}
@@ -412,7 +412,8 @@ export default function ActiveJobs() {
                     const jobAssignments = assignments?.filter((a: any) => a.job_id === job.id) || []
                     const assignedUsers = jobAssignments.map((ja: any) => ({
                         full_name: userMap[ja.user_id] || 'Unknown',
-                        user_id: ja.user_id
+                        user_id: ja.user_id,
+                        status: ja.status
                     }))
 
                     // Always use cache if available, otherwise null
@@ -468,12 +469,31 @@ export default function ActiveJobs() {
         }
 
         // Optimistic update
-        setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: newStatus, last_updated_by: userId || undefined } : j))
+        setJobs(prev => prev.map(j => {
+            if (j.id !== job.id) return j;
+            // Update local assignment status
+            const newAssignments = j.assigned_users?.map(u =>
+                u.user_id === userId ? { ...u, status: newStatus } : u
+            );
+            // If I wasn't assigned before, I am now (handled by fetch usually, but helpful for optimistic)
+            // For now, simple optimistic update of status
+            return { ...j, status: newStatus, last_updated_by: userId || undefined, assigned_users: newAssignments };
+        }))
 
+        // 1. Update Global Job Status (Legacy/Admin View)
         const { error } = await supabase
             .from('jobs')
             .update({ status: newStatus, last_updated_by: userId })
             .eq('id', job.id)
+
+        // 2. Update My Personal Assignment Status (New Logic)
+        if (userId) {
+            await supabase
+                .from('job_assignments')
+                .update({ status: newStatus })
+                .eq('job_id', job.id)
+                .eq('user_id', userId)
+        }
 
         if (error) {
             alert("Failed to update status")
@@ -485,9 +505,7 @@ export default function ActiveJobs() {
         if (newStatus === 'on_way' || newStatus === 'on_site') {
             const conflictingJob = jobs.find(j =>
                 j.id !== job.id &&
-                (j.status === 'on_way' || j.status === 'on_site') &&
-                j.assigned_users?.some(u => u.user_id === userId) &&
-                (j.last_updated_by === userId || !j.last_updated_by)
+                j.assigned_users?.some(u => u.user_id === userId && (u.status === 'on_way' || u.status === 'on_site'))
             );
 
             if (conflictingJob) {

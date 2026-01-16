@@ -10,7 +10,7 @@ export interface Job {
     contact_detail: string
     status: string
     last_updated_by?: string
-    assigned_users?: { full_name: string, user_id: string }[]
+    assigned_users?: { full_name: string, user_id: string, status?: string }[]
 }
 
 export interface EmployeeStats {
